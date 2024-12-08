@@ -4,6 +4,7 @@
    [example.routes :as routes]
    [next.jdbc.connection :as connection]
    [proletarian.worker :as worker]
+   [clojure.tools.logging :as log]
    [ring.adapter.jetty :as jetty])
   (:import (com.zaxxer.hikari HikariDataSource)
            (io.github.cdimascio.dotenv Dotenv)
@@ -41,12 +42,17 @@
   [worker]
   (worker/stop! worker))
 
+
 (defn start-server
   [{::keys [env] :as system}]
-  (jetty/run-jetty
-   (partial #'routes/root-handler system)
-   {:port (Long/parseLong (Dotenv/.get env "PORT"))
-    :join? false}))
+  (let [handler (if (= (Dotenv/.get env "ENVIRONMENT") "development")
+                  (partial #'routes/root-handler system)
+                  (routes/root-handler system))]
+    (log/info "00000000000000 Starting server")
+    (jetty/run-jetty
+     handler
+     {:port  (Long/parseLong (Dotenv/.get env "PORT"))
+      :join? false})))
 
 (defn stop-server
   [server]
@@ -57,6 +63,7 @@
   (let [system-so-far {::env (start-env)}
         system-so-far (merge system-so-far {::db (start-db system-so-far)})
         system-so-far (merge system-so-far {::worker (start-worker system-so-far)})]
+    (log/info "Starting server")
     (merge system-so-far {::server (start-server system-so-far)})))
 
 (defn stop-system

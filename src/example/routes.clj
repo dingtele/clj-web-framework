@@ -3,6 +3,7 @@
             [example.cave.routes :as cave-routes]
             [example.goodbye.routes :as goodbye-routes]
             [example.hello.routes :as hello-routes]
+            [example.system :as-alias system]
             [hiccup2.core :as hiccup]
             [reitit.ring :as reitit-ring]))
 
@@ -24,10 +25,14 @@
              [:h1 "Not Found"]]]))})
 
 (defn root-handler
-  [system request]
-  (log/info (str (:request-method request) " - " (:uri request)))
-  (let [handler (reitit-ring/ring-handler
-                 (reitit-ring/router
-                  (routes system))
-                 #'not-found-handler)]
-    (handler request)))
+  ([system request]
+   ((root-handler system) request))
+  ([system]
+   (let [handler (reitit-ring/ring-handler
+                  (reitit-ring/router
+                   (routes system))
+                  #'not-found-handler)]
+     (fn root-handler [request]
+       (log/info "1111111111110 Starting server")
+       (log/info (str (:request-method request) " - " (:uri request)))
+       (handler request)))))
